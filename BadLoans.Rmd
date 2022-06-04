@@ -1,0 +1,427 @@
+---
+title: "BadLoans"
+author: "Melody Xu"
+date: "1/28/2022"
+output: html_document
+---
+
+## R Markdown
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+**This exercise is under construction. Please report any errors at https://forms.gle/2W4tffs4YJA1jeBv9**
+
+Goal: 
+Understand and experience logistic regression to predict the probability of loan default (due to fraud or other reasons).
+Build skills and confidence to search for online help.
+
+Background:
+The data for this question contains information about borrowers, loans, and the outcome (defaulted or paid). We are concerned about minimize loss, and not concerned whether the default was intentional or unintentional. I developed this assignment to walk you through the process because I couldn't find any assignment at this level that can balance fundamentals and practical aspects. The data has been derived from has been adapted from https://campus.datacamp.com/courses/credit-risk-modeling-in-r/ (but my approach is quite different).
+
+
+Before starting:
+1. You are not allowed to:
+   1a. Search for solutions to this assignment
+   2b. Subcontract your assignment to someone else
+2. You are allowed to:
+   2a. Search information about packages and functions you may use
+   2b. Consult with your team mates.
+
+
+Individual assignment only: 179 total points (Rmd and html solution)
+
+## [1 point] Q1.
+Start by entering your name and today's date in Lines 3 and 4, respectively, to indicate your compliance with the Fuqua Honor Code.
+Then, run the chunk of code below by clicking on the green arrow (that points to the right) on the top right of the chunk.
+*Tip:* I numbered code chunks corresponding to their numbers. Chunk 1 specifies the knitting parameters.
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [6 points] Q2.
+Read and store the data from the file *LoanData.rds* into a variable called *loanData*.
+Then, inspect the data using 2 or more R commands.
+*Tip:* Use Google to learn about rds file format and how to read it into R. You'll likely need some libraries and packages.
+*Rubric:* 3 each point for reading, 1 point for storing; 1 points each for using 2 R commands for inspecting.*
+```{r}
+#install.packages("tidyverse")
+library(dplyr)
+library(readr)
+loanData <-readRDS("/Users/manaka/Desktop/LoanData.rds")
+str(loanData)
+summary(loanData)
+```
+
+
+## [4 points] Q3.
+I haven't provided you the data dictionary but the columns have descriptive names so you can easily interpret them. Perhaps, *homeLiving* and *creditGrade* are unclear. Figure what *homeLiving* and *creditGrade* represent by examining the the summary.
+*Rubric:* 2 points for each (*homeLiving* and *creditGrade*).
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+homeliving is about whether the home they are living at is owned, rented, mortgaged or other. creditGrade is their credit grade, from A to G. 
+
+## [6 points] Q4.
+Now, let's make sure we understand credit grade using crosstables *isLoanDefault* and *creditGrade*.
+*Tip:* Follow these steps to make progress... 
+1. Find, install, and load the library with CrossTable function.
+2. Call CrossTable() on *creditGrade* and *isLoanDefault* columns of loanData.
+*Rubric:* 4 points for finding, installing and loading the correct libraries; 2 points for calling CrossTable with the correct parameters.
+```{r}
+#install.packages("gmodels")
+library(gmodels)
+CrossTable(loanData$creditGrade,loanData$isLoanDefault)
+```
+
+## [4 points] Q5.
+Based on the above answers, deduce whether or not A is the best (highest) credit rating. Explain your reasoning. 
+*Tip:* The third number in each box under the loanData$isLoanDefault column is the proportion of default rate. For example, the default rate for A was 0.059 (i.e., 5.9%). You do not need to understand CrossTable beyond that to answer this question.
+*Rubric:* 1 point for the correct answer, 3 points for the reasoning.
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+*Answer:* A is the best credit rating because A has the lowest default rate, 0.059, compared to other grades' default rates. The default rate increases from A to G. 
+
+
+## [12 points] Q6.
+Let's check for any outliers in the numeric/integer columns related to the borrowers (employmentYears, incomeAnnual, ageYears) in steps:
+1. Examine the summary statistics to pick large relative gaps between the minimum and the 1st quartile as well as the maximum and the 3rd quartile. 
+2. Then, display a scatter plot of all combinations of two variables, one at a time.
+*Tip:* I prefer to visualize outliers using scatter plots as a combination of two variables, so I can get a better understanding of the outliers, such as a huge salary for a young person (in age or employment duration).
+*Tip:* library(ggplot2) and library(gridExtra) may be useful.
+*Rubric:* 3 points for each plot; 3 point for examining the summary data (on honor code).
+```{r}
+library(ggplot2)
+library(gridExtra)
+summary(loanData)
+
+#1 employmentYears: min - 1st quartile = 2, max - 3rd quartile = 54 (larger)
+# incomeAnnual: min - 1st quartile = 36,000, max - 3rd quartile = 5,920,000 (larger)
+# ageYears: min - 1st quartile = 3, max - 3rd quartile = 114(larger)
+#2
+plot(loanData$employmentYears, loanData$incomeAnnual)
+plot(loanData$employmentYears,loanData$ageYears)
+plot(loanData$ageYears,loanData$incomeAnnual)
+```
+
+## [6 points] Q7. 
+Now, identify and remove any outliers and store the result in *loanDataNoOutliers*.
+Then, examine loanDataNoOutliers to verify that your code worked.
+*Tip:* I only removed one row. The others may be useful for our model. 
+*Tip:* The structure of *loanData* and *loanDataNoOutliers* should be identical expect the number of rows be different (because you removed one or more rows).
+*Rubric:* 1 points for each column; 2 point for removing, 1 point for checking.
+```{r}
+loanData[loanData$ageYears == 144,]
+loanDataNoOutliers <- loanData[!(loanData$ageYears == 144 & loanData$incomeAnnual ==6000000 & loanData$employmentYears == 12),] 
+str(loanDataNoOutliers)
+
+```
+
+## [3 points] Q8.
+Should you report any removed row(s) for further investigation?
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+Yes, we should report because those rows may lead to default. We can do further investigation to
+find why those are outliers and train our model to detect default. 
+
+## [4 points] Q9.
+Why do we store the the loanData in a new variable loanDataNoOutliers? Can you imagine a scenario when you would be better off not storing the result?
+*Rubric:* 2 points for each answer.
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+ 
+```
+The outliers may be important information that are related to target default rate to assess the factors influencing default rate. Storing into a new variable, we can use the loanData later if 
+we want to further invesitgate outliers. 
+A scenario could be when we analyze population ages. If age is 320, then it should be better off not storing the result. We all know it's meaningless to keep it. 
+
+## [9 points] Q10.
+Now, let's handle missing data by:
+1. Make a copy of *loanDataNoOutliers* and call it *loanDataNoOutliersNA*. Then, conduct the following operations on *loanDataNoOutliersNA*.
+2. Compute the percentage missing (NA) values in each column. 
+3. Add a new column for each variable that has missing values, as missing data can be an fraud indicator. The value of this column is 1 to indicate rows with missing values, and 0 otherwise.
+4. Replace the missing values with the median value of the column if there are fewer than 10% missing values.
+5. Delete the entire column if there are 10% or more missing values.
+*Tip:* mean(is.na(dfName$colName))*100 gives you the percentage of missing values in colName of dfName.
+*Tip:* median(dfName$colName, na.rm = TRUE) gives you the median value (ignoring all NAs).
+*Tip:* The summary should be similar except the added columns and imputed data.
+*Tip:* In real life, I would have asked you to use better imputation methods than just replacing by median.
+*Rubric:* 0.5 points for checking each column; 4 point for handling NAs, 1 point for checking.
+```{r}
+mean(is.na(loanDataNoOutliers$isLoanDefault))*100
+mean(is.na(loanDataNoOutliers$loanAmount))*100
+mean(is.na(loanDataNoOutliers$interestRate))*100  # 9.542
+mean(is.na(loanDataNoOutliers$creditGrade))*100
+mean(is.na(loanDataNoOutliers$employmentYears))*100 #2.78
+mean(is.na(loanDataNoOutliers$homeLiving))*100
+mean(is.na(loanDataNoOutliers$incomeAnnual))*100 
+mean(is.na(loanDataNoOutliers$ageYears))*100 
+
+library(tidyverse)
+loanDataNoOutliersNA  <- add_column(loanDataNoOutliers, 'NA for interest rate' = ifelse(is.na(loanDataNoOutliers$interestRate), 1, 0), .after = "interestRate")
+loanDataNoOutliersNA  <- add_column(loanDataNoOutliersNA, 'NA for employmentYears' = ifelse(is.na(loanDataNoOutliersNA$employmentYears), 1, 0), .after = "employmentYears")
+
+loanDataNoOutliersNA$interestRate[is.na(loanDataNoOutliers$interestRate)] <- median(loanDataNoOutliers$interestRate, na.rm = TRUE)
+loanDataNoOutliersNA$employmentYears[is.na(loanDataNoOutliers$employmentYears)] <-median(loanDataNoOutliers$employmentYears, na.rm = TRUE)
+
+summary(loanDataNoOutliersNA)
+```
+
+
+## [9 points] Q11.
+We should consider some of our features (aka variables and columns) for categorization because they don't have a clear relationship with the target variable. For example, a higher interest rate may cause higher default due to financial burden while a lower interest rate may cause a higher default due to complacency (or procrastination). Which other variables should you consider for categorization?
+*Rubric:* 1 points for each feature (*isLoanDefault* is not a feature)
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+A high loan amount may cause higher default due to the amount including interest is too high for borrowers to pay off while a lower loan amount may have a lower probability of default than high amount. It depends on borrows' conditions to decide whether they have ability to pay off lower amount, such as their income. If they have low income, it's still high default. 
+A bad credit rate may cause higher default due to their history of default while a good credit rate may lower the probability of default. A good credit may higher default due to complacency. 
+Employment years should be considered. A high employment year may cause a lower default due to their stabilization, long-time wealth accumulation and higher salary compared to early career, but it may cause high default due to high-quality living standards, which cost a lot. A lower employment year may cause a higher default due to moonlight clans or low accumulation of wealth. 
+The type of home should be considered. Owning a home may have lower financial liability than mortgage, rent, causing lower default.  
+A high annual income may cause lower default because they have money to pay off, while it may cause a higher default due to high-quality living standards, which cost a lot. A low annual income may cause a higher default due to low ability to pay back, but it depends on other factors, like loan amount. 
+A high age may cause a lower default due to their stabilization, long-time wealth accumulation, but it may cause high default due to more medical expenses. A low age may cause a higher default due to moonlight clans or low accumulation of wealth. 
+
+
+## [10 points] Q12.
+Before running regression, separate *loanDataNoOutliersNA* into training data (dataframe *loanTrain*) and test data (dataframe *loanTest*) using the sample() function. Start by *set.seed(2020)* so we can reproduce the randomization for multiple runs (see http://rfunction.com/archives/62 to learn more).
+The dataframe *loanTest* should contains 1/3rds of *loanDataNoOutliersNA*'s rows. The dataframe *loanTrain* should contains the other 2/3rds of *loanDataNoOutliersNA*'s rows. 
+Then, inspect the structure of *loanTrain* and *loanTest* to verify that your code works.
+*Tip:* Follow the following steps:
+1. set.seed(2020)
+2. Use sample() to generate *loanTestIndices* as a sample of 1/3 of *loanDataNoOutliersNA*'s indices for testing. The remaining 2/3 will be used to train. (Note: Most people generate the 2/3 indices for training but the optimizer in me prefers to assign 1/3 as much work to my computer - this is a byproduct of working in real-time systems where every nanosecond counts).
+3. Use these statements like the 2 statements below to split between test and training data.
+*loanTest =  loanDataNoOutliersNA[loanTestIndices, ]* and *loanTrain = loanDataNoOutliersNA[-loanTestIndices, ]*
+*Rubric:* 1 points for set.seed(), 3 points for correctly sampling, 4 points (2 each) for constructing loanTest and loanTrain, 2 point for verifying.
+```{r}
+set.seed(2020)
+loanTestIndices <- sample(nrow(loanDataNoOutliersNA), 1/3*nrow(loanDataNoOutliersNA))
+loanTrain <-loanDataNoOutliersNA[loanTestIndices,]
+loanTest <- loanDataNoOutliersNA[-loanTestIndices,]
+str(loanTrain)
+str(loanTest)
+```
+
+## [6 points] Q13.
+Run a logistic regression on *loanTrain* data and store the result in *glmBase*.
+Then, print the summary of *glmBase*.
+*Tip:* Your call will look something like the one below.
+*glmBase = glm(target  ~ ., family = "binomial", data = trainingdata)*
+Note: You will need to replace your call with the appropriate variables. (The . indicates that we will consider all features in the regression equation.)
+*Tip:* I realize that some people would consider categorization at this stage. I like to learn more by running a regression now before considering categorizations. (Notice that we don't need to consider categorizing *naInterestRate* and *naEmploymentYears* because binary data is already a *factor* and ordering doesn't matter in binary data). 
+*Rubric:* 5 points for the glm call, 1 point for summary
+```{r}
+glmBase <- glm(isLoanDefault    ~ ., family = "binomial", data = loanTrain)
+  summary(glmBase)
+```
+## [9 points] Q14.
+Examine the significance levels of your base model above by reviewing the *summary()*. Which variables are most significant? Which are mildly significant, and which are not very significant?
+*Tip:* Focus on the last column (low *Pr(>|z|)* values) and asterisks (high significance) to determine which variables are most significant. The least significant variables have high *Pr(>|z|)* values and few asterisks. 
+*Tip:* The first two columns are not useful because they are not scaled.
+*Rubric:* 1 points for each feature
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+incomeAnnual, Grade B-G are most significant
+ageYears, homeLivingRENT, homeLivingOWN, homeLivingOTHER, employmentYears, interestRate, loanAmount are not very significant
+
+## [10 points] Q15.
+In real life, we would now try to optimize our model by:
+  Filtering through hundreds of features (metaphorically)
+  Consider categorizing or transforming variables with low significance
+  etc.
+However, for this exercise, we will start our predictions based on this model because we have only a few features. We may refine our model with transformations and categorizations later.
+Specifically, carry out the following steps:
+1. Compute the predictions for each row in the *loanTest* dataframe using the predict function and store the result in vector called *predictionsBase*. Modify the predict function below for your needs and/or Google for help.
+   *predict(object = yourModel, newdata = test, type = "response")*
+   where your object is your model, newdata is your test data, and type is always "response" (because that gives converts from log-odds to probability)
+2. Then, append the *predictionsBase* vector to *loanTest* (as its last column).
+3. Print a statistical summary of *predictionsBase*, *loanTest[, "isLoanDefault"]*, and *predictionsBase - loanTest[, "isLoanDefault"]* to check the accuracy the predictions. Relatively similar summary statistics and difference near zero and are good early signs.
+*Rubric:* 6 points for correct use of predict, 1 point for appending the new column, 3 points (1 point each) for summary()
+```{r}
+predictionsBase <- predict(object = glmBase, newdata = loanTest, type = "response")
+loanTest$predictionsBase <- predictionsBase
+summary(predictionsBase)
+summary(loanTest[, "isLoanDefault"])
+summary(predictionsBase - loanTest[, "isLoanDefault"])
+```
+
+## [4 points] Q16.
+What are your thoughts on the summary of *predictionsBase - loanTest[, "isLoanDefault"]*?
+*Tip:* Check the min, median, mean, max of the value.
+*Rubric:* 1 points for observing the each item in the tip.
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+Median, mean looks good. The difference is near 0, and the accuracy is relatively high. 
+But, min and max have a big difference. The accuracy is relatively low. 
+Overall, it's hard to see the exact accuracy because predictions are not based on 0 or 1, different from isLoanDefault. 
+
+## [4 points] Q17.
+Notice that *isLoanDefault* is 0 or 1, while *predictionsBase* is a probability value (that ranges from between 0 to about 0.5). That means we need to convert the probability distribution to a 0 or 1 prediction using a cutoff value that maps each probability to either 0 or 1. A natural cutoff value is 0.5. Count the number of rows that would be classified as 0 and 1, respectively, by using the cutoff of *0.5*.
+*Tip:* Add up the number of TRUE values using sum on the respective logical conditions.
+*Rubric:* 2 points each.
+```{r}
+TF <- ifelse(predictionsBase < 0.5, TRUE, FALSE)
+sum(TF)
+
+```
+
+## [6 points] Q18.
+Consider the cutoff of 0.5 based on the output from the last chunk. Would you adjust the cutoff value? Why? How?
+*Tip:* I learned this on my own and this was an important lesson for choosing the cutoff values.
+*Rubric:* 2 points for each question above
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+
+```
+Yes, I would adjust the cutoff value because the max of predictionsBase is 0.5, so using 0.5 as cutoff would not help convert the probability distribution to a 0 or 1. Therefore, I would firstly use train model's default percentage [sum(loanTrain$isLoanDefault)/9697] as the cutoff, and later adjust cutoff based on results.  
+
+## [6 points] Q19. 
+Now, set a value for a variable called *cutoff* that improves the cutoff value based on what you know about your model and the data. 
+Then, use this *cutoff* value to compute a new column vector called *isPrediction* based on *predictionsBase*.
+Then, add this vector as the first column of *loanTest* (so it can be side by side with *isLoanDefault*).
+Finally, print a summary of *loanTest* to verify that your code works.
+*Tip:* I based my *cutoff* on the fact that 0.1121 of test cases are bad loans. Specifically, I sorted the *predictionsBase* vector in non-decreasing order (using *sort()* function with *decreasing = TRUE*), and then I set the value of *cutoff* equal to value of the element number **as.integer(0.1121 * length(sortedPredictionBase)) of the sorted list.**
+*Rubric:* 2 points each for choice of *cutoff* and generating is *isPrediction*; 1 point each for adding *isPrediction* as the first column of *loanTest* and verifying the result.
+```{r}
+
+sortedPredictionBase = sort(predictionsBase,decreasing = TRUE)
+cutoff = sortedPredictionBase[as.integer(0.1121 * length(sortedPredictionBase))] 
+isPrediction = ifelse(cutoff < loanTest$predictionsBase, 1, 0)
+loanTest <- add_column(loanTest,isPrediction,.before="isLoanDefault")
+summary(loanTest)
+
+```
+
+## [8 points] Q20. 
+Now, compute the number of True Negatives, False Negatives, False Positives, True Positives, respectively. Store the results in tneg, fneg, fpos, and tpos, respectively.
+Then, print all four values.
+*Tip:* **tneg = sum( (0 == loanTest$isPrediction) & (0 == loanTest$isLoanDefault))**
+*Rubric:* 2 point of each value.
+```{r}
+tneg = sum( (0 == loanTest$isPrediction) & (0 == loanTest$isLoanDefault))
+fneg = sum( (1 == loanTest$isPrediction) & (0 == loanTest$isLoanDefault))
+fpos = sum( (0 == loanTest$isPrediction) & (1 == loanTest$isLoanDefault))
+tpos = sum( (1 == loanTest$isPrediction) & (1 == loanTest$isLoanDefault))
+```
+
+## [8 points] Q21. 
+Now, let's use the *confusionMatrix()* function to gauge the model's confusion. The *confusionMatrix()* function is similar to our true/false negatives/positives calculations above but it also generates more data.
+*Tip:* You will need to install/library caret and e1071 to call *confusionMatrix()* as shown below:
+*confusionMatrix(data = as.factor(predicted), reference =as.factor(actual))*
+Notice that we have to convert integers to factors. The predicted parameter is *loanTest$isPrediction* and the actual parameter is *loanTest$isLoanDefault*.
+*Rubric:* 4 points for installing libraries. 4 points for using *confusionMatrix()*.
+```{r}
+#install.packages("caret")
+library(caret)
+#install.packages("e1071")
+library(e1071)
+confusionMatrix(data = as.factor(loanTest$isPrediction), reference =as.factor(loanTest$isLoanDefault))
+```
+
+## [6 points] Q22.
+Now, let's return to our choice of cutoff to understand how this choice impacts the Accuracy, Sensitivity, and Specificity.
+Run the code below to print the confusion matrix for *cutoff* you used earlier, and verify that this gives you the same results as the previous chunk (while bypassing a lot of of other code).
+Then, learn about confusion matrix by Googling "accuracy sensitivity specificity confusion matrix" and/or reading https://towardsdatascience.com/taking-the-confusion-out-of-confusion-matrices-c1ce054b3d3e.
+*Rubric:* 1 point for running the code; 3 points for learning more about confusion matrix (based on honor code)
+```{r}
+### Do not edit this code, just run it!
+confusionMatrix(data = as.factor(as.numeric(cutoff < loanTest$predictionsBase)), 
+                reference = as.factor(loanTest$isLoanDefault))
+```
+
+
+## [6 points] Q23.
+Now, increase the cutoff by 10 percent and report if the following parameters increased or decreased compared to your original cutoff: *Accuracy*, *Sensitivity*, and *Specificity*?
+*Tip:* Ignore any warnings.
+*Rubric:* 2 points for each Accuracy, Sensitivity, and Specificity
+```{r}
+cutoff1 = (1+0.1)*cutoff
+confusionMatrix(data = as.factor(as.numeric(cutoff1 < loanTest$predictionsBase)), 
+                reference = as.factor(loanTest$isLoanDefault))
+### Complete the following phrases:
+## The Accuracy increased compared to original cutoff
+## The Sensitivity increased compared to original cutoff
+## The Specificity decreased compared to original cutoff
+```
+
+## [6 points] Q24.
+Now, decrease the cutoff by 10 percent and report if the following parameters increased or decreased: *Accuracy*, *Sensitivity*, and *Specificity*?
+*Rubric:* 2 points for each Accuracy, Sensitivity, and Specificity
+```{r}
+
+cutoff2 = (1-0.1)*cutoff
+confusionMatrix(data = as.factor(as.numeric(cutoff2 < loanTest$predictionsBase)), 
+                reference = as.factor(loanTest$isLoanDefault))
+### Complete the following phrases:
+## The Accuracy decreased compared to original cutoff   
+## The Sensitivity decreased compared to original cutoff   
+## The Specificity increased compared to original cutoff    
+```
+
+## [5 points] Q25.
+Find the maximum value you can set to replace 0.1 below without generating an warning.
+*Tip:* The summary of predictionsBase will give you a clue.
+```{r}
+### Do not edit any other than 0.1 in this code, just run it!
+summary(loanTest$predictionsBase)
+### Changed 0.4958791 to 0.1 for assignment
+confusionMatrix(data = as.factor(as.numeric(0.478 < loanTest$predictionsBase)), 
+                reference = as.factor(loanTest$isLoanDefault))
+```
+
+## [3 points] Q26.
+What is the danger in maximizing the accuracy?
+*Tip:* Review the confusion matrices above.
+```{r}
+### This section doesn't require code. Just answer below (outside) the code block.
+# Most data won't be balanced and so accuracy becomes poor measure of evaluation. 
+```
+
+
+## [5 points] Q27.
+Examine the output from Chunk 13 and run a new regression with (only) the top 5 predictors of the target variable, and store the result in *glmTop5*. 
+Then, print the summary of *glmTop5*.
+*Rubric:* 1 point for each of the top 5 predictors.
+```{r}
+glmTop5 = glm(isLoanDefault ~incomeAnnual+ creditGrade +homeLiving +interestRate+employmentYears , family = "binomial", data = loanTrain)
+summary(glmTop5)
+```
+
+## [3 points] Q28........
+Examine the output from the previous chunk and run a new regression with (only) the top 3 predictors of the target variable, and store the result in *glmTop3*. 
+Then, print the summary of *glmTop3*.
+*Rubric:* 1 point for each of the top 3 predictors.
+```{r}
+glmTop3 = glm(isLoanDefault ~incomeAnnual+ creditGrade +interestRate, family = "binomial", data = loanTrain)
+summary(glmTop3)
+```
+
+## [5 points] Q29...........
+Based on the AIC scores which one of the following would you choose for modeling and why: glmBase, glmTop5, glmTop3?
+```{r}
+### This section doesn't require code but feel free to reprint any critical values.
+summary(glmBase) # 6496.5
+summary(glmTop3) #6503.5
+summary(glmTop5) #6509 
+
+```
+*Answer:*
+I'll choose glmBase model. 
+
+## [5 points] Q30. 
+*Knit to html after eliminating all the errors. Submit both the Rmd and html files.* 
+*Tip: Do not worry about minor formatting issues.*
+*Tip: This will take some time as you are processing medium size data sets.*
+```{r}
+### This section doesn't require code. Just knit and submit the Rmd and html files.### 
+```
+
+

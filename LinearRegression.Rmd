@@ -1,0 +1,103 @@
+---
+title: "Fraud Analysis Linear Regression"
+author: "MELODY XU"
+date: "2/5/2022"
+output: html_document
+---
+
+## R Markdown
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+**This exercise is under construction. Please report any errors at https://forms.gle/2W4tffs4YJA1jeBv9**
+
+Goal:
+Practice basic linear regression techniques in R.
+
+Before starting:
+1. You are not allowed to search for solutions to this assignment.
+2. You are allowed to search information about packages and functions that can help you.
+
+Individual assignment only: 47 total points (Rmd and html solution)
+
+## [1 point] Q1.
+*Start by entering your name and today's date in Lines 3 and 4, respectively.* 
+*Then, run the chunk of code below by clicking on the green arrow (that points to the right) on the top right of the chunk.*
+*Tip: I numbered code chunks corresponding to their numbers. Chunk 1 specified the knitting parameters.*
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## [2 point] Q2. 
+*Before getting started, clear your Environment using the rm command inline.*
+*Then, restart R and clear output.*
+```{r}
+rm(list = ls())
+```
+
+## [2 points] Q3.
+*Read in the linearregression.csv file we provided into R. This is simple simulated data that we will use to revise linear regression.*
+```{r}
+library(readr)
+data = read_csv(file ='/Users/manaka/Desktop/linearregression.csv')
+```
+
+## [5 points] Q4.
+*Perform a simple linear regression of y (y-axis) against x (x-axis) and assign it to the variable reg1. Display the summary of your regression.*
+```{r}
+reg1 = lm(y~x,data)
+summary(reg1)
+```
+
+## [2 points] Q5.
+*What is the R squared of your regression?*
+```{r}
+### This section doesn't require code. Just knit and submit the Rmd and html files.### 
+```
+0.2775 
+
+## [5 points] Q6.
+*Which variables are significant in your regression? How do you know?*
+```{r}
+### This section doesn't require code. Just knit and submit the Rmd and html files.### 
+```
+x is significant in my regression because it has three asterisks, and Pr(>|t|) is less than 0.05. 
+
+## [5 points] Q7.
+*In simple English, tell us what it means to say that a regression variable is significant?*
+```{r}
+### This section doesn't require code. Just knit and submit the Rmd and html files.### 
+```
+There is relationship between a regression variable (x) and target variable (y). 
+
+## [5 points] Q8.
+*Make a scatterplot of y against x in base R and superimpose a colored straight line of best fit.*
+```{r}
+library(ggplot2)
+ggplot(data,aes(x,y)) + geom_point()+ geom_smooth(method = lm, col = 'red')
+
+```
+
+## [10 points] Q9.
+*As you have seen from the previous questions, the R squared is bad (low) and the line of best fit (which is just the regression line of best fit) does not really fit the points well. Now is your chance to change this. Make a new regression, reg2, in which you add another term to the independent variables of the regression to make your regression fit better. Explain your choice of this new variable.*
+*Display the summary of this new regression. Check to make sure that your new variable is significant. What is your new R squared? This R squared should be about twice as large as your R squared for reg1. Why is your R squared so much better?*
+```{r}
+reg2 = lm(sqrt(y)~x,data)
+summary(reg2) 
+# New R squared is 0.4267. The reason is square root transformation leads to a model that better fits the assumptions and that explains more variance. It inflates smaller numbers but stabilizes bigger ones.
+```
+
+## [5 points] Q10.
+*Use the following code to see four common diagnostic plots for your new regression. These plots are often used to evaluate regressions. The first of these plots is a Residual vs Fitted Values plot (commonly just called Residual plot). When points are randomly scatter on both sides of the dotted line in this plot, we know our regression is doing well. Do you think your reg2 does well as a regression over the data provided?*
+```{r}
+library(ggfortify)
+autoplot(reg2)
+#Yes, the reg2 does well as a regression over the data provided because the dots are near the line. 
+```
+
+## [5 points] Q11. 
+*Knit to html after eliminating all the errors. Submit both the Rmd and html files.* 
+*Tip: Do not worry about minor formatting issues.*
+```{r}
+### This section doesn't require code. Just knit and submit the Rmd and html files.### 
+```
+
